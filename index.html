@@ -1439,6 +1439,7 @@
         const [cats, setCats] = useState([]);
         const [items, setItems] = useState([]);
         const [selCat, setSelCat] = useState(null);
+        const [search, setSearch] = useState('');
         const [cart, setCart] = useState([]);
         const [showCart, setShowCart] = useState(false);
         const [showCO, setShowCO] = useState(false);
@@ -1504,7 +1505,17 @@
         };
         const total = cart.reduce((s, c) => s + c.item.price * c.quantity, 0);
         const count = cart.reduce((s, c) => s + c.quantity, 0);
-        const filtered = selCat ? items.filter(i => i.category_id === selCat) : items;
+        const filtered = items.filter(item => {
+
+            const matchCategory =
+                !selCat || item.category_id === selCat;
+
+            const matchSearch =
+                item.name.toLowerCase()
+                    .includes(search.toLowerCase());
+
+            return matchCategory && matchSearch;
+        });
 
         if (view === 'admin-login') return <AdminLogin onLogin={() => setView('admin')}/>;
         if (view === 'admin' && user) return <AdminPanel onLogout={() => {
@@ -1635,6 +1646,24 @@
                                         color: 'white'
                                     } : {background: 'rgba(30,41,59,.8)', color: '#94a3b8'}}>{c.name}</button>
                         ))}
+                    </div>
+                </section>
+
+                {/* Search */}
+
+                <section className="px-6 mb-8">
+                    <div className="max-w-2xl mx-auto">
+                        <div className="relative">
+                            <input
+                                type="text"
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                                placeholder="Pesquisar armamentos, munições, medicamentos..."
+                                className="w-full px-5 py-4 pl-12 bg-slate-900/80 border border-slate-700 rounded-2xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-violet-500 transition-colors"
+                            />
+
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-lg"> 🔍 </span>
+                        </div>
                     </div>
                 </section>
 
