@@ -572,7 +572,7 @@
     }
 
     // ─── OrdersTab ─────────────────────────────────────────────────────────
-    function OrdersTab({orders}) {
+    function OrdersTab({ orders, setOrders }){
         const [selected, setSelected] = useState(null);
         const [ois, setOis] = useState([]);
         const [loading, setLoading] = useState(false);
@@ -586,8 +586,28 @@
         };
 
         const changeStatus = async (id, status) => {
-            await db.from('orders').update({status}).eq('id', id);
-            setSelected(s => s?.id === id ? {...s, status} : s);
+
+            const { data, error } = await db
+                .from('orders')
+                .update({ status })
+                .eq('id', id)
+                .select()
+                .single();
+
+            if (error) {
+                console.error(error);
+                return;
+            }
+
+            // Atualiza tabela imediatamente
+            setOrders(prev =>
+                prev.map(o =>
+                    o.id === id ? data : o
+                )
+            );
+
+            // Atualiza modal imediatamente
+            setSelected(data);
         };
 
         const NEXT = {
@@ -1276,7 +1296,7 @@
                         ? <div className="text-center py-20 text-slate-600"><p
                             className="text-4xl mb-3 animate-pulse">⚙️</p>Carregando...</div>
                         : tab === 'orders'
-                            ? <OrdersTab orders={orders}/>
+                            ? <OrdersTab orders={orders} setOrders={setOrders}/>
                             : <ItemsTab items={items} categories={cats} onRefresh={loadAll}/>
                     }
                 </div>
