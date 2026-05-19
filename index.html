@@ -186,14 +186,43 @@
                     total_price: total,
                     status: 'pending'
                 }).select().single();
+
                 if (oErr) throw oErr;
+
+                // const { error: iErr } = await db.from('order_items').insert(
+                //     cart.map(({ item, quantity }) => ({
+                //         order_id: order.id, item_id: item.id,
+                //         item_name: item.name, item_price: item.price, quantity
+                //     }))
+                // );
+                // if (iErr) throw iErr;
+
                 const { error: iErr } = await db.from('order_items').insert(
                     cart.map(({ item, quantity }) => ({
-                        order_id: order.id, item_id: item.id,
-                        item_name: item.name, item_price: item.price, quantity
+                        order_id: order.id,
+                        item_id: item.id,
+                        item_name: item.name,
+                        item_price: item.price,
+                        quantity
                     }))
                 );
+
                 if (iErr) throw iErr;
+
+                // ↓↓↓ DESCONTAR ESTOQUE ↓↓↓
+                for (const { item, quantity } of cart) {
+                    const novoEstoque = Math.max(0, item.stock - quantity);
+
+                    const { error: stockErr } = await db
+                        .from('items')
+                        .update({ stock: novoEstoque })
+                        .eq('id', item.id);
+
+                    if (stockErr) throw stockErr;
+                }
+
+                onSuccess(order);
+
                 onSuccess(order);
             } catch (e) {
                 setError('Erro ao registrar pedido. Tente novamente.');
