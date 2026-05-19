@@ -655,6 +655,31 @@
             setSelected(data);
         };
 
+        const saveAdminNote = async () => {
+
+            if (!selected) return;
+
+            const { error } = await db
+                .from('orders')
+                .update({
+                    admin_note: selected.admin_note
+                })
+                .eq('id', selected.id);
+
+            if (error) {
+                console.error(error);
+                return;
+            }
+
+            setOrders(prev =>
+                prev.map(o =>
+                    o.id === selected.id
+                        ? { ...o, admin_note: selected.admin_note }
+                        : o
+                )
+            );
+        };
+
         const NEXT = {
             pending: ['confirmed', 'cancelled'],
             confirmed: ['delivered', 'cancelled'],
@@ -831,6 +856,31 @@
                                         </div>
                                     ))
                                 )}
+                            </div>
+
+                            <div className="mb-6">
+                                <label className="block text-xs text-slate-500 mb-2 uppercase tracking-wider font-semibold">
+                                    Observações Administrativas
+                                </label>
+
+                                <textarea
+                                    value={selected.admin_note || ''}
+                                    onChange={e =>
+                                        setSelected(prev => ({
+                                            ...prev,
+                                            admin_note: e.target.value
+                                        }))
+                                    }
+                                    rows={4}
+                                    placeholder="Ex: Pedido atrasado devido a atividade hostil na região..."
+                                    className="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-2xl text-sm text-white placeholder-slate-600 resize-none focus:outline-none focus:border-violet-500 transition-colors"
+                                />
+                                <button
+                                    onClick={saveAdminNote}
+                                    className="mt-3 px-4 py-2 rounded-xl text-sm font-medium bg-violet-500 hover:bg-violet-600 transition-all"
+                                >
+                                    Salvar Observação
+                                </button>
                             </div>
 
                             {/* Status */}
