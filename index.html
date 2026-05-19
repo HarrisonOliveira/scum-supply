@@ -714,6 +714,9 @@
             image_url: item?.image_url || '',
             available: item?.available ?? true
         });
+
+        const [imageFile, setImageFile] = useState(null);
+
         const [load, setLoad] = useState(false);
         const [err, setErr] = useState('');
         const set = (k, v) => setForm(f => ({...f, [k]: v}));
@@ -724,13 +727,41 @@
                 return;
             }
             setLoad(true);
+            let imageUrl = form.image_url;
+
+            if (imageFile) {
+                const fileExt = imageFile.name.split('.').pop();
+
+                const fileName = `${crypto.randomUUID()}.${fileExt}`;
+
+                const { error: uploadError } = await db.storage
+                    .from('item-images')
+                    .upload(fileName, imageFile, {
+                        cacheControl: '3600',
+                        upsert: false
+                    });
+
+                if (uploadError) {
+                    console.error(uploadError);
+                    setErr(uploadError.message);
+                    setLoad(false);
+                    return;
+                }
+
+                const { data } = db.storage
+                    .from('item-images')
+                    .getPublicUrl(fileName);
+
+                imageUrl = data.publicUrl;
+            }
+
             const payload = {
                 name: form.name.trim(),
                 description: form.description.trim() || null,
                 price: parseInt(form.price) || 0,
                 stock: parseInt(form.stock) || 0,
                 category_id: form.category_id,
-                image_url: form.image_url.trim() || null,
+                image_url: imageUrl || null,
                 available: form.available
             };
             if (item) await db.from('items').update(payload).eq('id', item.id);
@@ -740,31 +771,7 @@
             onClose();
         };
 
-        const uploadImage = async (file) => {
-            if (!file) return;
 
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${Date.now()}.${fileExt}`;
-
-            const { error: uploadError } = await db.storage
-                .from('item-images')
-                .upload(fileName, file, {
-                    cacheControl: '3600',
-                    upsert: false
-                });
-
-            if (uploadError) {
-                console.error(uploadError);
-                setErr('Erro ao enviar imagem.');
-                return;
-            }
-
-            const { data } = db.storage
-                .from('item-images')
-                .getPublicUrl(fileName);
-
-            set('image_url', data.publicUrl);
-        };
 
         return (
             <div style={{
@@ -851,7 +858,12 @@
                                 <input
                                     type="file"
                                     accept="image/*"
-                                    onChange={e => uploadImage(e.target.files[0])}
+                                    onChange={e => {
+                                        const file = e.target.files[0];
+                                        if (!file) return;
+                                        setImageFile(file);
+                                        set('image_url', URL.createObjectURL(file));
+                                    }}
                                     className="hidden"
                                 />
                             </label>
