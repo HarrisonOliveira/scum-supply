@@ -563,7 +563,7 @@
     }
 
     // ─── OrdersTab ─────────────────────────────────────────────────────────
-    function OrdersTab({ orders, setOrders, reloadItems}){
+    function OrdersTab({ orders, setOrders, reloadItems, search, setSearch}){
         const [selected, setSelected] = useState(null);
         const [ois, setOis] = useState([]);
         const [loading, setLoading] = useState(false);
@@ -694,6 +694,20 @@
 
         return (
             <div>
+
+                <div className="mb-6">
+                    <div className="relative">
+                        <input
+                            type="text"
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            placeholder="Pesquisar pedido, jogador ou Discord..."
+                            className="w-full px-4 py-3 pl-11 bg-slate-900 border border-slate-700 rounded-2xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-violet-500 transition-colors"
+                        />
+
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"> 🔍 </span>
+                    </div>
+                </div>
 
                 {/* List */}
                 <div className="rounded-2xl border border-slate-800 overflow-hidden bg-slate-900/40">
@@ -1302,6 +1316,7 @@
         const [load, setLoad] = useState(true);
         const [badge, setBadge] = useState(0);
         const [search, setSearch] = useState('');
+        const [orderSearch, setOrderSearch] = useState('');
 
         const loadItems = async () => {
             const { data } = await db
@@ -1344,6 +1359,17 @@
         const filteredItems = items.filter(item =>
             item.name.toLowerCase().includes(search.toLowerCase())
         );
+
+        const filteredOrders = orders.filter(order => {
+
+            const q = orderSearch.toLowerCase();
+
+            return (
+                order.order_number?.toLowerCase().includes(q) ||
+                order.player_name?.toLowerCase().includes(q) ||
+                order.discord?.toLowerCase().includes(q)
+            );
+        });
 
         return (
             <div style={{minHeight: '100vh', background: '#020817'}}>
@@ -1419,7 +1445,13 @@
                         ? <div className="text-center py-20 text-slate-600"><p
                             className="text-4xl mb-3 animate-pulse">⚙️</p>Carregando...</div>
                         : tab === 'orders'
-                            ? <OrdersTab orders={orders} setOrders={setOrders} reloadItems={loadAll}/>
+                            ? <OrdersTab
+                                orders={filteredOrders}
+                                setOrders={setOrders}
+                                reloadItems={loadAll}
+                                search={orderSearch}
+                                setSearch={setOrderSearch}
+                            />
                             : <ItemsTab
                                 items={filteredItems}
                                 categories={cats}
