@@ -282,7 +282,7 @@
     }
 
     // ─── CheckoutModal ─────────────────────────────────────────────────────
-    function CheckoutModal({cart, total, onClose, onSuccess}) {
+    function CheckoutModal({cart, total, onClose, onSuccess, reloadCatalog}) {
         const [form, setForm] = useState({player_name: '', discord: '', chest_password: ''});
         const [loading, setLoading] = useState(false);
         const [error, setError] = useState('');
@@ -309,16 +309,6 @@
 
                 if (oErr) throw oErr;
 
-                // const { error: iErr } = await db.from('order_items').insert(
-                //     cart.map(({ item, quantity }) => ({
-                //         order_id: order.id,
-                //         item_id: item.id,
-                //         item_name: item.name,
-                //         item_price: item.price,
-                //         quantity
-                //     }))
-                // );
-                // if (iErr) throw iErr;
 
                 const {error: iErr} = await db.from('order_items').insert(
                     cart.map(({item, quantity}) => ({
@@ -344,7 +334,8 @@
                     if (stockErr) throw stockErr;
                 }
 
-                onSuccess(order);
+                // RECARREGA CATÁLOGO
+                await reloadCatalog();
 
                 onSuccess(order);
             } catch (e) {
@@ -1355,7 +1346,7 @@
         );
     }
 
-    // ─── App (Catalog) ─────────────────────────────────────────────────────
+    //  App (Catalog)
     function App() {
         const [view, setView] = useState('catalog');
         const [cats, setCats] = useState([]);
@@ -1387,17 +1378,27 @@
         }, [user]);
 
         // Catalog
+        const loadCatalog = async () => {
+            setLoading(true);
+
+            const [{ data: cs }, { data: its }] = await Promise.all([
+                db.from('categories')
+                    .select('*')
+                    .order('name'),
+
+                db.from('items')
+                    .select('*,categories(name,slug)')
+                    .eq('available', true)
+                    .order('name'),
+            ]);
+
+            setCats(cs || []);
+            setItems(its || []);
+            setLoading(false);
+        };
+
         useEffect(() => {
-            (async () => {
-                setLoading(true);
-                const [{data: cs}, {data: its}] = await Promise.all([
-                    db.from('categories').select('*').order('name'),
-                    db.from('items').select('*,categories(name,slug)').eq('available', true).order('name'),
-                ]);
-                setCats(cs || []);
-                setItems(its || []);
-                setLoading(false);
-            })();
+            loadCatalog();
         }, []);
 
         // Cart helpers
@@ -1587,11 +1588,19 @@
                         setShowCart(false);
                         setShowCO(true);
                     }}/>}
-                {showCO && <CheckoutModal cart={cart} total={total} onClose={() => setShowCO(false)} onSuccess={o => {
-                    setSuccess(o);
-                    setShowCO(false);
-                    setCart([]);
-                }}/>}
+                {showCO && (
+                    <CheckoutModal
+                        cart={cart}
+                        total={total}
+                        reloadCatalog={loadCatalog}
+                        onClose={() => setShowCO(false)}
+                        onSuccess={o => {
+                            setSuccess(o);
+                            setShowCO(false);
+                            setCart([]);
+                        }}
+                    />
+                )}
                 {success && <OrderSuccessModal order={success} onClose={() => setSuccess(null)}/>}
             </div>
         );
