@@ -587,6 +587,57 @@
 
         const changeStatus = async (id, status) => {
 
+            // Busca pedido atual
+            const currentOrder = orders.find(o => o.id === id);
+
+            // Evita cancelar duas vezes
+            if (currentOrder?.status === 'cancelled') {
+                return;
+            }
+
+            // Evita que um pedido que já foi feita entrega seja cancelado.
+            if (currentOrder.status === 'delivered') return;
+
+            // Se estiver cancelando
+            if (status === 'cancelled') {
+
+                // Busca itens do pedido
+                const { data: orderItems, error: itemsError } = await db
+                    .from('order_items')
+                    .select('*')
+                    .eq('order_id', id);
+
+                if (itemsError) {
+                    console.error(itemsError);
+                    return;
+                }
+
+                // Devolve estoque
+                for (const oi of orderItems) {
+
+                    // Busca item atual
+                    const { data: itemData, error: itemError } = await db
+                        .from('items')
+                        .select('stock')
+                        .eq('id', oi.item_id)
+                        .single();
+
+                    if (itemError) {
+                        console.error(itemError);
+                        continue;
+                    }
+
+                    // Atualiza estoque
+                    await db
+                        .from('items')
+                        .update({
+                            stock: itemData.stock + oi.quantity
+                        })
+                        .eq('id', oi.item_id);
+                }
+            }
+
+            // Atualiza status
             const { data, error } = await db
                 .from('orders')
                 .update({ status })
@@ -599,14 +650,14 @@
                 return;
             }
 
-            // Atualiza tabela imediatamente
+            // Atualiza tabela
             setOrders(prev =>
                 prev.map(o =>
                     o.id === id ? data : o
                 )
             );
 
-            // Atualiza modal imediatamente
+            // Atualiza modal
             setSelected(data);
         };
 
