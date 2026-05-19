@@ -1138,7 +1138,7 @@
     }
 
     // ─── ItemsTab ──────────────────────────────────────────────────────────
-    function ItemsTab({items, categories, onRefresh}) {
+    function ItemsTab({items, categories, onRefresh, search, setSearch}) {
         const [showAdd, setShowAdd] = useState(false);
         const [editItem, setEditItem] = useState(null);
 
@@ -1155,6 +1155,20 @@
 
         return (
             <div>
+                <div className="mb-6">
+                    <div className="relative">
+                        <input
+                            type="text"
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            placeholder="Pesquisar item..."
+                            className="w-full px-4 py-3 pl-11 bg-slate-900 border border-slate-700 rounded-2xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-violet-500 transition-colors"
+                        />
+
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">🔍</span>
+
+                    </div>
+                </div>
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
                         Estoque ({items.length} itens)
@@ -1287,6 +1301,7 @@
         const [cats, setCats] = useState([]);
         const [load, setLoad] = useState(true);
         const [badge, setBadge] = useState(0);
+        const [search, setSearch] = useState('');
 
         const loadItems = async () => {
             const { data } = await db
@@ -1325,6 +1340,10 @@
         }, []);
 
         const pending = orders.filter(o => o.status === 'pending').length;
+
+        const filteredItems = items.filter(item =>
+            item.name.toLowerCase().includes(search.toLowerCase())
+        );
 
         return (
             <div style={{minHeight: '100vh', background: '#020817'}}>
@@ -1401,7 +1420,13 @@
                             className="text-4xl mb-3 animate-pulse">⚙️</p>Carregando...</div>
                         : tab === 'orders'
                             ? <OrdersTab orders={orders} setOrders={setOrders} reloadItems={loadAll}/>
-                            : <ItemsTab items={items} categories={cats} onRefresh={loadAll}/>
+                            : <ItemsTab
+                                items={filteredItems}
+                                categories={cats}
+                                onRefresh={loadAll}
+                                search={search}
+                                setSearch={setSearch}
+                            />
                     }
                 </div>
             </div>
