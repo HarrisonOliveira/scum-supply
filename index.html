@@ -563,7 +563,7 @@
     }
 
     // ─── OrdersTab ─────────────────────────────────────────────────────────
-    function OrdersTab({ orders, setOrders }){
+    function OrdersTab({ orders, setOrders, reloadItems}){
         const [selected, setSelected] = useState(null);
         const [ois, setOis] = useState([]);
         const [loading, setLoading] = useState(false);
@@ -625,6 +625,9 @@
                             stock: itemData.stock + oi.quantity
                         })
                         .eq('id', oi.item_id);
+
+                    // RECARREGA TABELA DE PRODUTOS
+                    await reloadItems();
                 }
             }
 
@@ -1235,6 +1238,15 @@
         const [load, setLoad] = useState(true);
         const [badge, setBadge] = useState(0);
 
+        const loadItems = async () => {
+            const { data } = await db
+                .from('items')
+                .select('*,categories(name,slug)')
+                .order('name');
+
+            setItems(data || []);
+        };
+
         const loadAll = async () => {
             setLoad(true);
             const [{data: ords}, {data: its}, {data: cs}] = await Promise.all([
@@ -1338,7 +1350,7 @@
                         ? <div className="text-center py-20 text-slate-600"><p
                             className="text-4xl mb-3 animate-pulse">⚙️</p>Carregando...</div>
                         : tab === 'orders'
-                            ? <OrdersTab orders={orders} setOrders={setOrders}/>
+                            ? <OrdersTab orders={orders} setOrders={setOrders} reloadItems={loadAll}/>
                             : <ItemsTab items={items} categories={cats} onRefresh={loadAll}/>
                     }
                 </div>
