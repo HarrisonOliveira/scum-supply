@@ -393,7 +393,9 @@
                                 <p><span className="text-violet-400 font-semibold">3 — Coleta:</span> A retirada do
                                     pagamento será realizada simultaneamente no ato da entrega fazendo uso da senha
                                     informada abaixo. Se a senha estiver errada, não será possível realizar a entrega
-                                    nem a coleta do pagamento.</p>
+                                    nem a coleta do pagamento. (Por restrições de configuração do servidor, desconsiderar
+                                    esta etapa e colocar a senha 123 no formulário abaixo. O pagamento deverá ser feito
+                                    no ato da entrega pelo solicitante da encomenda)</p>
                             </div>
                             <p className="text-xs text-slate-600 italic">Nota: Mantenha o perímetro seguro até a chegada
                                 do nosso entregador.</p>
@@ -562,7 +564,7 @@
         );
     }
 
-    // ─── OrdersTab ──────────────────────────────────
+    // ─── OrdersTab ─────────────────────────────────────────────────────────
     function OrdersTab({ orders, setOrders, reloadItems, search, setSearch}){
         const [selected, setSelected] = useState(null);
         const [ois, setOis] = useState([]);
@@ -1537,7 +1539,7 @@
         );
     }
 
-    //  App (Catalog)
+    //  App (Catalogo) ────────────────────────────────────────────────────────
     function App() {
         const [view, setView] = useState('catalog');
         const [cats, setCats] = useState([]);
