@@ -562,7 +562,7 @@
         );
     }
 
-    // ─── OrdersTab ─────────────────────────────────────────────────────────
+    // ─── OrdersTab ──────────────────────────────────
     function OrdersTab({ orders, setOrders, reloadItems, search, setSearch}){
         const [selected, setSelected] = useState(null);
         const [ois, setOis] = useState([]);
@@ -1076,7 +1076,7 @@
                                     group"
                             >
                                 <div className="flex flex-col items-center justify-center text-center">
-                                <span className="text-3xl mb-2 group-hover:scale-110 transition-transform"> 📸 </span>
+                                    <span className="text-3xl mb-2 group-hover:scale-110 transition-transform"> 📸 </span>
 
                                     <p className="text-sm font-medium text-slate-300">
                                         Clique para enviar imagem
@@ -1156,6 +1156,9 @@
         const [showAdd, setShowAdd] = useState(false);
         const [editItem, setEditItem] = useState(null);
 
+        const [selCat, setSelCat] = useState(null);
+        const [onlyOutStock, setOnlyOutStock] = useState(false);
+
         const toggle = async (item) => {
             await db.from('items').update({available: !item.available}).eq('id', item.id);
             onRefresh();
@@ -1166,6 +1169,24 @@
             await db.from('items').delete().eq('id', id);
             onRefresh();
         };
+
+        const filteredItems = items.filter(item => {
+
+            // filtro categoria
+            const matchCategory =
+                !selCat || item.category_id === selCat;
+
+            // filtro pesquisa
+            const matchSearch =
+                item.name.toLowerCase()
+                    .includes(search.toLowerCase());
+
+            // filtro sem estoque
+            const matchStock =
+                !onlyOutStock || item.stock <= 0;
+
+            return matchCategory && matchSearch && matchStock;
+        });
 
         return (
             <div>
@@ -1182,6 +1203,57 @@
                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">🔍</span>
 
                     </div>
+                </div>
+                <div className="flex flex-wrap gap-2 mb-6">
+
+                    {/* Todos */}
+                    <button
+                        onClick={() => {
+                            setSelCat(null);
+                            setOnlyOutStock(false);
+                        }}
+                        className={`px-4 py-2 rounded-xl text-sm transition-all ${
+                            !selCat && !onlyOutStock
+                                ? 'bg-violet-500 text-white'
+                                : 'bg-slate-800 text-slate-400 hover:text-white'
+                        }`}
+                    >
+                        Todos
+                    </button>
+
+                    {/* Categorias */}
+                    {categories.map(cat => (
+                        <button
+                            key={cat.id}
+                            onClick={() => {
+                                setSelCat(cat.id);
+                                setOnlyOutStock(false);
+                            }}
+                            className={`px-4 py-2 rounded-xl text-sm transition-all ${
+                                selCat === cat.id
+                                    ? 'bg-violet-500 text-white'
+                                    : 'bg-slate-800 text-slate-400 hover:text-white'
+                            }`}
+                        >
+                            {cat.name}
+                        </button>
+                    ))}
+
+                    {/* Sem estoque */}
+                    <button
+                        onClick={() => {
+                            setSelCat(null);
+                            setOnlyOutStock(true);
+                        }}
+                        className={`px-4 py-2 rounded-xl text-sm transition-all ${
+                            onlyOutStock
+                                ? 'bg-red-500 text-white'
+                                : 'bg-slate-800 text-slate-400 hover:text-white'
+                        }`}
+                    >
+                        Sem Estoque
+                    </button>
+
                 </div>
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
@@ -1216,10 +1288,10 @@
                                     <p>Nenhum item cadastrado</p>
                                 </td>
                             </tr>
-                        ) : items.map((item, idx) => {
+                        ) : filteredItems.map((item, idx) => {
                             const slug = item.categories?.slug || 'outros';
                             const lucro = item.npc_price > 0 ? item.price - item.npc_price : null;
-                            const isLast = idx === items.length - 1;
+                            const isLast = idx === filteredItems.length - 1;
                             return (
                                 <tr key={item.id}
                                     className={`transition-colors hover:bg-slate-800/30 ${!isLast ? 'border-b border-slate-800/60' : ''} ${!item.available ? 'opacity-50' : ''}`}>
